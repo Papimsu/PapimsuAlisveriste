@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "id": "d8wk9m6x",
+    "name": "Ürün",
+    "url": "https://www.amazon.com.tr/dp/B0BK25SY9G",
+    "normal_price": 0,
+    "target_price": 17000,
+    "effective_target": 17850,
+    "discount_threshold_percent": null,
+    "last_checked_price": null,
+    "last_alert_sent_price": null,
+    "active": true
+  }
+]

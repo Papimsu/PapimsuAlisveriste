@@ -70,12 +70,12 @@ def check_all_products():
 
         # Kural 1: Hedef Fiyatın Altına Düştü mü? (Varsa %5 bufferlı effective_target kullanılır)
         threshold = item.get("effective_target") or target_price
-        if threshold and current_price <= threshold:
+        if threshold and current_price <= float(threshold):
             trigger_alert = True
             reasons.append(f"Hedef fiyat eşiği olan {int(threshold):,} TL altına indi!")
 
         # Kural 2: Belirlenen İndirim Yüzdesi Aşıldı mı?
-        if discount_percent_target and calc_discount >= discount_percent_target:
+        if discount_percent_target and normal_price > 0 and calc_discount >= discount_percent_target:
             trigger_alert = True
             reasons.append(f"%{calc_discount:.1f} indirim yakalandı! (Eşik: %{discount_percent_target})")
 

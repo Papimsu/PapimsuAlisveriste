@@ -1,14 +1,1 @@
-[
-  {
-    "id": "b4kwp9mw",
-    "name": "Amazon Urunu (B0BK25SY9G)",
-    "url": "https://www.amazon.com.tr/dp/B0BK25SY9G",
-    "normal_price": 0,
-    "target_price": 122,
-    "effective_target": 128,
-    "discount_threshold_percent": null,
-    "last_checked_price": null,
-    "last_alert_sent_price": null,
-    "active": true
-  }
-]
+[]

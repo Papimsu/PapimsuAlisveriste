@@ -22,5 +22,17 @@
     "last_checked_price": null,
     "last_alert_sent_price": null,
     "active": true
+  },
+  {
+    "id": "v5lv3r7p",
+    "name": "Amazon Ürünü",
+    "url": "https://www.amazon.com.tr/dp/B0GYYZHD3T",
+    "normal_price": 0,
+    "target_price": 10000,
+    "effective_target": 10500,
+    "discount_threshold_percent": null,
+    "last_checked_price": null,
+    "last_alert_sent_price": null,
+    "active": true
   }
 ]

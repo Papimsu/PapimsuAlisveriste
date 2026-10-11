@@ -42,9 +42,45 @@ def check_all_products():
         data = fetch_amazon_product(url)
 
         if not data["success"] or data["price"] is None:
-            print(f"⚠️ Fiyat okunamadı: {data.get('error') or 'Element bulunamadı'}")
+            err_msg = data.get('error') or 'Element veya fiyat bulunamadı'
+            print(f"⚠️ Fiyat okunamadı: {err_msg}")
+            
+            # Sağlık Takibi: Arka arkaya başarısızlık sayacı
+            fail_count = item.get("consecutive_failures", 0) + 1
+            item["consecutive_failures"] = fail_count
+            item["last_error"] = err_msg
+            updated = True
+            
+            # İlk kritik arızada (veya 2. kontrolde teyit edilince) Tek Seferlik Sistem Uyarısı gönder
+            if fail_count == 2 and not item.get("error_alert_sent", False):
+                system_alert = (
+                    f"⚠️ SİSTEM UYARISI: Ürün Fiyatı Okunamıyor!\n\n"
+                    f"📦 Ürün: {item.get('name', 'Bilinmeyen Ürün')}\n"
+                    f"🌐 Platform: {data.get('platform', 'Bilinmeyen')}\n"
+                    f"❌ Hata: {err_msg}\n"
+                    f"🔗 Link:\n{url}\n\n"
+                    f"ℹ️ Bot bu ürün için 2 turdur veri alamıyor. Sorun çözülene kadar grup gereksiz mesajla boğulmayacaktır. Düzeldiğinde bildireceğim."
+                )
+                send_telegram(system_alert)
+                item["error_alert_sent"] = True
+
             time.sleep(random.uniform(2.0, 4.0))
             continue
+
+        # Eğer daha önce bu ürün için hata uyarısı verilmişse ve şimdi başarıyla çözüldüyse: İyileşme Bildirimi At
+        if item.get("error_alert_sent", False):
+            recovery_alert = (
+                f"✅ SİSTEM NORMALE DÖNDÜ!\n\n"
+                f"📦 Ürün: {data.get('title') or item.get('name')}\n"
+                f"💰 Güncel Fiyat: {data['price']:,.2f} TL başarıyla okundu.\n"
+                f"🛡️ Takip sorunsuz şekilde devam ediyor."
+            )
+            send_telegram(recovery_alert)
+            item["error_alert_sent"] = False
+
+        # Başarılı okuma olduğunda hata sayacını sıfırla
+        item["consecutive_failures"] = 0
+        item["last_error"] = None
 
         current_price = data["price"]
         item["last_checked_price"] = current_price
@@ -108,7 +144,7 @@ def check_all_products():
                 send_telegram(alert_message)
                 item["last_alert_sent_price"] = current_price
 
-        # Amazon ban koruması için 2-4 saniye bekle
+        # Ban koruması için 2-4 saniye bekle
         time.sleep(random.uniform(2.0, 4.0))
 
     if updated:

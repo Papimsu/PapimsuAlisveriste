@@ -1,13 +1,14 @@
 import os
 import httpx
 
-# GitHub Actions Secrets boş gelirse diye güvenli yedek tanımları
+# Öncelikli bildirim hedefi: Ortak Aile Grubu (-1004357390519)
 FALLBACK_BOT_TOKEN = "8975854875:AAEYoCLeZ9gdzvcXNxoSqHpJ465J_aX3lJ4"
-FALLBACK_CHAT_ID = "8958109267"
+FALLBACK_CHAT_ID = "-1004357390519"
 
 def send_telegram(message: str, bot_token: str = None, chat_id: str = None) -> bool:
     """
     Telegram Resmi Bot API kullanarak mesaj gönderir.
+    Varsayılan olarak ortak Telegram grubuna (-1004357390519) atar.
     """
     token = bot_token or os.environ.get("TELEGRAM_BOT_TOKEN") or FALLBACK_BOT_TOKEN
     chat = chat_id or os.environ.get("TELEGRAM_CHAT_ID") or FALLBACK_CHAT_ID
@@ -27,7 +28,7 @@ def send_telegram(message: str, bot_token: str = None, chat_id: str = None) -> b
         with httpx.Client(timeout=15.0) as client:
             resp = client.post(url, json=payload)
             if resp.status_code == 200:
-                print("✅ Telegram bildirimi başarıyla gönderildi!")
+                print(f"✅ Telegram bildirimi başarıyla gönderildi! (Hedef: {chat})")
                 return True
             else:
                 print(f"⚠️ Telegram API hatası ({resp.status_code}): {resp.text}")

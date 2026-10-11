@@ -88,7 +88,11 @@ def check_all_products():
             else:
                 print("🚨🚨 ALARM ŞARTI SAĞLANDI! 🚨🚨")
                 reason_text = "\n".join(reasons)
-                seller_note = "✅ Satıcı: Amazon.com.tr" if data.get("is_amazon_seller") else "ℹ️ Satıcı: Üçüncü Taraf"
+                seller_display = data.get("seller_name", "Satıcı")
+                if data.get("is_official_seller"):
+                    seller_note = f"✅ Satıcı: {seller_display} (Resmi Satıcı)"
+                else:
+                    seller_note = f"🏪 Satıcı: {seller_display} (Pazaryeri Satıcısı)"
                 
                 real_title = data.get("title") or name
                 alert_message = (

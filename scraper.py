@@ -64,11 +64,10 @@ def fetch_amazon(soup: BeautifulSoup, raw_html: str) -> Dict[str, Any]:
             combined = f"{whole.get_text(strip=True)}.{fraction_text}"
             price_found = parse_price(combined)
 
-    # --- GERÇEK SATICI TESPİTİ (AMAZON) ---
+    # Satıcı Tespiti
     seller_name = "Üçüncü Taraf Satıcı"
     is_official = False
 
-    # 1. Modern Buybox Alanı
     buybox = soup.find(id="desktop_buybox") or soup.find(id="buybox")
     if buybox:
         bb_text = buybox.get_text(" ", strip=True)
@@ -76,12 +75,10 @@ def fetch_amazon(soup: BeautifulSoup, raw_html: str) -> Dict[str, Any]:
             seller_name = "Amazon.com.tr"
             is_official = True
         else:
-            # Satıcı profil linki varsa adını al
             seller_link = buybox.find(id="sellerProfileTriggerId") or buybox.find("a", href=re.compile(r"/seller/"))
             if seller_link:
                 seller_name = seller_link.get_text(strip=True)
 
-    # 2. Yedek: merchant-info
     if not is_official:
         m_info = soup.find(id="merchant-info")
         if m_info and "amazon" in m_info.get_text(strip=True).lower():
@@ -96,7 +93,7 @@ def fetch_trendyol(soup: BeautifulSoup, raw_html: str) -> Dict[str, Any]:
     seller_name = "Trendyol Satıcısı"
     is_official = False
 
-    # JSON-LD'den fiyat ve başlık
+    # JSON-LD
     scripts = soup.find_all("script", type="application/ld+json")
     for s in scripts:
         try:
@@ -112,7 +109,7 @@ def fetch_trendyol(soup: BeautifulSoup, raw_html: str) -> Dict[str, Any]:
         title_elem = soup.find("h1", class_="pr-new-br") or soup.find("h1")
         title = title_elem.get_text(" ", strip=True) if title_elem else None
 
-    # --- GERÇEK SATICI TESPİTİ (TRENDYOL) ---
+    # Satıcı
     match = re.search(r'"merchant":\{"id":\d+,"name":"([^"]+)"', raw_html)
     if match:
         seller_name = match.group(1)
@@ -128,28 +125,44 @@ def fetch_hepsiburada(soup: BeautifulSoup, raw_html: str) -> Dict[str, Any]:
     seller_name = "Hepsiburada Satıcısı"
     is_official = False
 
+    # 1. Başlık
+    title_elem = soup.find("h1", id="product-name") or soup.find("h1")
+    if title_elem:
+        title = title_elem.get_text(strip=True)
+
+    # 2. JSON-LD Kontrolü
     scripts = soup.find_all("script", type="application/ld+json")
     for s in scripts:
         try:
             data = json.loads(s.string)
             if "offers" in data:
                 price_found = parse_price(str(data["offers"].get("price")))
-                title = data.get("name")
+                if not title:
+                    title = data.get("name")
                 break
         except Exception:
             pass
 
-    if not title:
-        title_elem = soup.find("h1", id="product-name") or soup.find("h1")
-        title = title_elem.get_text(strip=True) if title_elem else None
+    # 3. Hepsiburada Sayfa İçi JSON Verisi (Kesin Fiyat ve Satıcı)
+    if price_found is None:
+        p_match = re.search(r'"price":\s*"([\d\.]+)"', raw_html)
+        if p_match:
+            price_found = parse_price(p_match.group(1))
 
-    # --- GERÇEK SATICI TESPİTİ (HEPSİBURADA) ---
-    seller_elem = soup.find("a", class_="merchant-name") or soup.find("span", class_="merchant-name")
-    if seller_elem:
-        seller_name = seller_elem.get_text(strip=True)
+    # Satıcı Adı Tespiti
+    m_match = re.search(r'"merchantName":\s*"([^"]+)"', raw_html)
+    if m_match:
+        seller_name = m_match.group(1)
         if "hepsiburada" in seller_name.lower():
             is_official = True
             seller_name = "Hepsiburada"
+    else:
+        seller_elem = soup.find("a", class_="merchant-name") or soup.find("span", class_="merchant-name")
+        if seller_elem:
+            seller_name = seller_elem.get_text(strip=True)
+            if "hepsiburada" in seller_name.lower():
+                is_official = True
+                seller_name = "Hepsiburada"
 
     return {"title": title, "price": price_found, "seller_name": seller_name, "is_official_seller": is_official, "platform": "Hepsiburada"}
 

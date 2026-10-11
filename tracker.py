@@ -49,6 +49,13 @@ def check_all_products():
         current_price = data["price"]
         item["last_checked_price"] = current_price
         item["last_checked_at"] = datetime.now().isoformat()
+        
+        # Eğer ürünün gerçek adı veya normal fiyatı henüz kaydedilmediyse otomatik güncelle
+        if data.get("title") and (not item.get("name") or "Amazon Urunu" in item.get("name") or "Amazon Ürünü" in item.get("name")):
+            item["name"] = data["title"]
+        if not item.get("normal_price") or item.get("normal_price") == 0:
+            item["normal_price"] = current_price
+            
         updated = True
 
         print(f"💰 Güncel Fiyat: {current_price:,.2f} TL (Normal: {normal_price:,.2f} TL)")

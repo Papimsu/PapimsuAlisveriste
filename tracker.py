@@ -51,10 +51,11 @@ def check_all_products():
         item["last_checked_at"] = datetime.now().isoformat()
         
         # Eğer ürünün gerçek adı veya normal fiyatı henüz kaydedilmediyse otomatik güncelle
-        if data.get("title") and (not item.get("name") or "Amazon Urunu" in item.get("name") or "Amazon Ürünü" in item.get("name")):
+        if data.get("title") and (not item.get("name") or "Amazon" in item.get("name") or "Ürün" in item.get("name") or "Urun" in item.get("name")):
             item["name"] = data["title"]
-        if not item.get("normal_price") or item.get("normal_price") == 0:
+        if not item.get("normal_price") or float(item.get("normal_price", 0)) == 0:
             item["normal_price"] = current_price
+            normal_price = current_price
             
         updated = True
 

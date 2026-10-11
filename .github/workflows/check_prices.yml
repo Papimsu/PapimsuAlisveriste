@@ -2,9 +2,9 @@ name: 7/24 Amazon Price & Glitch Checker
 
 on:
   schedule:
-    # Her 15 dakikada bir otomatik çalışır (GitHub Actions cron formatı)
+    # Her 15 dakikada bir otomatik çalışır
     - cron: '*/15 * * * *'
-  workflow_dispatch: # İstediğinde GitHub arayüzünden tek tıkla elle tetikleme
+  workflow_dispatch: # Elle tetikleme
 
 jobs:
   check-prices:
@@ -24,10 +24,10 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Fiyatları Kontrol Et & WhatsApp Bildirimi Gönder
+      - name: Fiyatları Kontrol Et & Telegram Bildirimi Gönder
         env:
-          WHATSAPP_PHONE: ${{ secrets.WHATSAPP_PHONE }}
-          WHATSAPP_API_KEY: ${{ secrets.WHATSAPP_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python tracker.py
 

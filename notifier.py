@@ -1,42 +1,38 @@
 import os
-import re
-import urllib.parse
 import httpx
 
-def send_whatsapp(message: str, phone: str = None, api_key: str = None) -> bool:
+def send_telegram(message: str, bot_token: str = None, chat_id: str = None) -> bool:
     """
-    CallMeBot Free WhatsApp Gateway kullanarak mesaj gönderir.
-    phone: Uluslararası format (örn: +905551234567 veya 905551234567)
-    api_key: CallMeBot'tan alınan ücretsiz apikey
+    Telegram Resmi Bot API kullanarak mesaj gönderir.
+    bot_token: @BotFather'dan alınan token
+    chat_id: Mesajın gideceği kullanıcı, grup veya kanal ID'si
     """
-    phone = phone or os.environ.get("WHATSAPP_PHONE")
-    api_key = api_key or os.environ.get("WHATSAPP_API_KEY")
+    token = bot_token or os.environ.get("TELEGRAM_BOT_TOKEN")
+    chat = chat_id or os.environ.get("TELEGRAM_CHAT_ID")
 
-    if not phone or not api_key:
-        print("[UYARI] WhatsApp ayarları (WHATSAPP_PHONE veya WHATSAPP_API_KEY) tanımlı değil.")
+    if not token or not chat:
+        print("[UYARI] Telegram ayarları (TELEGRAM_BOT_TOKEN veya TELEGRAM_CHAT_ID) tanımlı değil.")
         return False
 
-    # Telefon numarasından + işaretini ve boşlukları temizle
-    phone_clean = re.sub(r"[^\d]", "", phone)
-    encoded_msg = urllib.parse.quote_plus(message)
-    
-    url = f"https://api.callmebot.com/whatsapp.php?phone={phone_clean}&text={encoded_msg}&apikey={api_key}"
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = {
+        "chat_id": chat,
+        "text": message,
+        "disable_web_page_preview": False
+    }
 
     try:
         with httpx.Client(timeout=15.0) as client:
-            resp = client.get(url)
-            if resp.status_code == 200 and "Message queued" in resp.text:
-                print("✅ WhatsApp bildirimi başarıyla gönderildi!")
+            resp = client.post(url, json=payload)
+            if resp.status_code == 200:
+                print("✅ Telegram bildirimi başarıyla gönderildi!")
                 return True
             else:
-                print(f"⚠️ WhatsApp API yanıtı: {resp.text}")
+                print(f"⚠️ Telegram API hatası ({resp.status_code}): {resp.text}")
                 return False
     except Exception as e:
-        print(f"❌ WhatsApp bildirim hatası: {e}")
+        print(f"❌ Telegram bildirim hatası: {e}")
         return False
 
 if __name__ == "__main__":
-    # Test amaçlı
-    test_msg = "🚨 FİYAT HATASI / İNDİRİM TEST MESAJI 🚨\nSistem başarıyla kuruldu!"
-    # send_whatsapp(test_msg, "905xxxxxxxxx", "your_apikey")
-    print("WhatsApp modülü hazır.")
+    print("Telegram modülü hazır.")

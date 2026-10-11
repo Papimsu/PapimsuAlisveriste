@@ -4,7 +4,7 @@ import os
 import random
 from datetime import datetime
 from scraper import fetch_amazon_product
-from notifier import send_whatsapp
+from notifier import send_telegram
 
 WATCHLIST_PATH = os.path.join(os.path.dirname(__file__), "watchlist.json")
 
@@ -91,7 +91,7 @@ def check_all_products():
                     f"🛒 Hemen İncele:\n{url}"
                 )
                 
-                send_whatsapp(alert_message)
+                send_telegram(alert_message)
                 item["last_alert_sent_price"] = current_price
 
         # Amazon ban koruması için 2-4 saniye bekle

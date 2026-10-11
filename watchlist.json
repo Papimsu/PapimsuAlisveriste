@@ -34,5 +34,17 @@
     "last_checked_price": null,
     "last_alert_sent_price": null,
     "active": true
+  },
+  {
+    "id": "7zqqte4s",
+    "name": "Ürün",
+    "url": "https://www.amazon.com.tr/dp/B0GYYZHD3T",
+    "normal_price": 0,
+    "target_price": 5000,
+    "effective_target": 5250,
+    "discount_threshold_percent": null,
+    "last_checked_price": null,
+    "last_alert_sent_price": null,
+    "active": true
   }
 ]

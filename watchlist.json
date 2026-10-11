@@ -1,0 +1,14 @@
+[
+  {
+    "id": "espresso-capsule",
+    "name": "THE WHIRL Espresso Strong Kapsül 55 G",
+    "url": "https://www.amazon.com.tr/dp/B0CJ5FM5HG",
+    "normal_price": 244.9,
+    "target_price": 150.0,
+    "discount_threshold_percent": 30.0,
+    "last_checked_price": 244.9,
+    "last_alert_sent_price": null,
+    "active": true,
+    "last_checked_at": "2026-10-11T22:55:02.791389"
+  }
+]

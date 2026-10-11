@@ -1,0 +1,39 @@
+name: 7/24 Amazon Price & Glitch Checker
+
+on:
+  schedule:
+    # Her 15 dakikada bir otomatik çalışır (GitHub Actions cron formatı)
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # İstediğinde GitHub arayüzünden tek tıkla elle tetikleme
+
+jobs:
+  check-prices:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Kodu Çek
+        uses: actions/checkout@v4
+
+      - name: Python Ortamını Kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Bağımlılıkları Yükle
+        run: |
+          pip install -r requirements.txt
+
+      - name: Fiyatları Kontrol Et & WhatsApp Bildirimi Gönder
+        env:
+          WHATSAPP_PHONE: ${{ secrets.WHATSAPP_PHONE }}
+          WHATSAPP_API_KEY: ${{ secrets.WHATSAPP_API_KEY }}
+        run: |
+          python tracker.py
+
+      - name: Güncellenen Fiyatları Depoya Kaydet (Git Commit)
+        run: |
+          git config --global user.name "Amazon Price Bot"
+          git config --global user.email "bot@github-actions.local"
+          git add watchlist.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto: Update checked prices" && git push)

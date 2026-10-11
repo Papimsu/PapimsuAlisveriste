@@ -89,9 +89,10 @@ def check_all_products():
                 reason_text = "\n".join(reasons)
                 seller_note = "✅ Satıcı: Amazon.com.tr" if data.get("is_amazon_seller") else "ℹ️ Satıcı: Üçüncü Taraf"
                 
+                real_title = data.get("title") or name
                 alert_message = (
                     f"🚨 FİYAT HATASI / İNDİRİM ALARMI! 🚨\n\n"
-                    f"📦 Ürün: {name}\n"
+                    f"📦 Ürün: {real_title}\n"
                     f"🏷️ Güncel Fiyat: {current_price:,.2f} TL\n"
                     f"📉 Normal Fiyat: {normal_price:,.2f} TL\n"
                     f"🔥 Durum: {reason_text}\n"

@@ -1,4 +1,5 @@
 import re
+import json
 from typing import Optional, Dict, Any
 from bs4 import BeautifulSoup
 from curl_cffi import requests
@@ -10,13 +11,14 @@ DEFAULT_HEADERS = {
 }
 
 def clean_url(url: str) -> str:
-    """URL'deki takip parametrelerini temizler."""
+    """URL'deki takip parametrelerini temizler ve evrensel formata getirir."""
     if "amazon" in url:
         asin_match = re.search(r"/(?:dp|gp/product)/([A-Z0-9]{10})", url)
         if asin_match:
             return f"https://www.amazon.com.tr/dp/{asin_match.group(1)}"
     elif "trendyol" in url:
-        clean = url.split("?")[0]
+        # /en/ gibi dil kodlarını kaldır ve query parametrelerini at
+        clean = url.split("?")[0].replace("/en/", "/")
         return clean
     elif "hepsiburada" in url:
         clean = url.split("?")[0]
@@ -24,11 +26,11 @@ def clean_url(url: str) -> str:
     return url
 
 def parse_price(price_text: str) -> Optional[float]:
-    """'5.499,00 TL' metnini float sayıya çevirir."""
+    """Her türlü para formatını float sayıya çevirir."""
     if not price_text:
         return None
     try:
-        clean = re.sub(r"[^\d,\.]", "", price_text).strip()
+        clean = re.sub(r"[^\d,\.]", "", str(price_text)).strip()
         if "," in clean and "." in clean:
             clean = clean.replace(".", "").replace(",", ".")
         elif "," in clean:
@@ -73,17 +75,32 @@ def fetch_amazon(soup: BeautifulSoup) -> Dict[str, Any]:
     return {"title": title, "price": price_found, "is_official_seller": is_amazon_seller, "platform": "Amazon"}
 
 def fetch_trendyol(soup: BeautifulSoup) -> Dict[str, Any]:
-    # Başlık
-    title_elem = soup.find("h1", class_="pr-new-br") or soup.find("h1")
-    title = title_elem.get_text(" ", strip=True) if title_elem else None
-
-    # Fiyat
+    title = None
     price_found = None
-    price_elem = soup.find("span", class_="prc-dsc") or \
-                 soup.find("span", class_="prc-slg") or \
-                 soup.find("div", class_="product-price-container")
-    if price_elem:
-        price_found = parse_price(price_elem.get_text(strip=True))
+
+    # 1. Öncelik: JSON-LD Yapısal Verisi (En Sağlam & Değişmeyen Yol)
+    scripts = soup.find_all("script", type="application/ld+json")
+    for s in scripts:
+        try:
+            data = json.loads(s.string)
+            if "offers" in data:
+                price_found = parse_price(str(data["offers"].get("price")))
+                title = data.get("name")
+                break
+        except Exception:
+            pass
+
+    # 2. Öncelik: HTML DOM Seçicileri (Yedek)
+    if not title:
+        title_elem = soup.find("h1", class_="pr-new-br") or soup.find("h1")
+        title = title_elem.get_text(" ", strip=True) if title_elem else None
+
+    if price_found is None:
+        price_elem = soup.find("span", class_="prc-dsc") or \
+                     soup.find("span", class_="prc-slg") or \
+                     soup.find("div", class_="product-price-container")
+        if price_elem:
+            price_found = parse_price(price_elem.get_text(strip=True))
 
     is_official = False
     seller_elem = soup.find("a", class_="merchant-text")
@@ -93,17 +110,31 @@ def fetch_trendyol(soup: BeautifulSoup) -> Dict[str, Any]:
     return {"title": title, "price": price_found, "is_official_seller": is_official, "platform": "Trendyol"}
 
 def fetch_hepsiburada(soup: BeautifulSoup) -> Dict[str, Any]:
-    # Başlık
-    title_elem = soup.find("h1", id="product-name") or soup.find("h1")
-    title = title_elem.get_text(strip=True) if title_elem else None
-
-    # Fiyat
+    title = None
     price_found = None
-    price_elem = soup.find("span", {"data-test-id": "price-current-price"}) or \
-                 soup.find("span", class_="price") or \
-                 soup.find("div", class_="price-area")
-    if price_elem:
-        price_found = parse_price(price_elem.get_text(strip=True))
+
+    # JSON-LD Kontrolü
+    scripts = soup.find_all("script", type="application/ld+json")
+    for s in scripts:
+        try:
+            data = json.loads(s.string)
+            if "offers" in data:
+                price_found = parse_price(str(data["offers"].get("price")))
+                title = data.get("name")
+                break
+        except Exception:
+            pass
+
+    if not title:
+        title_elem = soup.find("h1", id="product-name") or soup.find("h1")
+        title = title_elem.get_text(strip=True) if title_elem else None
+
+    if price_found is None:
+        price_elem = soup.find("span", {"data-test-id": "price-current-price"}) or \
+                     soup.find("span", class_="price") or \
+                     soup.find("div", class_="price-area")
+        if price_elem:
+            price_found = parse_price(price_elem.get_text(strip=True))
 
     is_official = False
     seller_elem = soup.find("a", class_="merchant-name") or soup.find("span", class_="merchant-name")
@@ -113,7 +144,6 @@ def fetch_hepsiburada(soup: BeautifulSoup) -> Dict[str, Any]:
     return {"title": title, "price": price_found, "is_official_seller": is_official, "platform": "Hepsiburada"}
 
 def fetch_product_data(url: str) -> Dict[str, Any]:
-    """Amazon, Trendyol veya Hepsiburada ürün bilgilerini çeker."""
     cleaned = clean_url(url)
     result = {
         "url": cleaned,
@@ -139,8 +169,8 @@ def fetch_product_data(url: str) -> Dict[str, Any]:
             return result
 
         soup = BeautifulSoup(resp.text, "html.parser")
-
         final_url = str(resp.url)
+
         if "amazon" in final_url:
             parsed = fetch_amazon(soup)
         elif "trendyol" in final_url:
@@ -162,6 +192,6 @@ def fetch_product_data(url: str) -> Dict[str, Any]:
         result["error"] = str(e)
         return result
 
-# Geriye dönük uyumluluk (tracker.py bozulmasın diye eski fonksiyon adı korunuyor)
+# Geriye dönük uyumluluk
 fetch_amazon_product = fetch_product_data
 clean_amazon_url = clean_url

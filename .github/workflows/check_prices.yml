@@ -2,10 +2,9 @@ name: 7/24 Amazon Price & Glitch Checker
 
 on:
   schedule:
-    # Saatte 2 kez (her saatin 07. ve 37. dakikası) = günde 48 = ayda ~1.440 dk (2.000 dk ücretsiz kotanın altında).
-    # :00 yerine :07/:37 seçildi çünkü GitHub'da :00 en yoğun dakikadır ve çalışmalar gecikir/atlanır.
-    # NOT: Aralık değişirse tracker.py içindeki CHECK_INTERVAL_MIN de güncellenmeli.
-    - cron: '7,37 * * * *'
+    # Public repo olduğu için GitHub Actions dakikaları tamamen SINIRSIZ ve ÜCRETSİZDİR.
+    # Her 15 dakikada bir otomatik kontrol edilir.
+    - cron: '*/15 * * * *'
   workflow_dispatch: # Elle tetikleme
 
 permissions:

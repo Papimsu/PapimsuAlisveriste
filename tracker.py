@@ -10,8 +10,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 WATCHLIST_PATH = os.path.join(BASE_DIR, "watchlist.json")
 STATUS_PATH = os.path.join(BASE_DIR, "status.json")
 
-CHECK_INTERVAL_MIN = 30          # GitHub Actions cron aralığı (check_prices.yml ile aynı olmalı)
-FAILURE_ALERT_THRESHOLD = 3      # Üst üste kaç başarısız turda sistem uyarısı atılsın (~1,5 saat)
+CHECK_INTERVAL_MIN = 15          # GitHub Actions cron aralığı (check_prices.yml ile aynı olmalı)
+FAILURE_ALERT_THRESHOLD = 4      # Üst üste kaç başarısız turda sistem uyarısı atılsın (4 tur = 1 saat)
 BIG_DROP_RATIO = 0.60            # Normal fiyatın %60'ının altı -> alarmdan önce 2. kez çekip teyit et
 TR_TZ = timezone(timedelta(hours=3))
 

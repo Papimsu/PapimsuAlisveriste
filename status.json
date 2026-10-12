@@ -1,10 +1,10 @@
 {
   "state": "ok",
   "error": null,
-  "items_checked": 1,
-  "ok": 1,
-  "failed": 0,
+  "items_checked": 2,
+  "ok": 0,
+  "failed": 2,
   "out_of_stock": 0,
-  "last_run_utc": "2026-10-12T08:32:50+00:00",
-  "last_run_tr": "12.10.2026 11:32"
+  "last_run_utc": "2026-10-12T08:58:15+00:00",
+  "last_run_tr": "12.10.2026 11:58"
 }

@@ -3,9 +3,9 @@
     "id": "d8wk9m6x",
     "title": "Pioneer DJ Pioneer DDJ-FLX4 Taşınabilir 2 Kanallı DJ Controller",
     "last_price": 17416.0,
-    "last_checked_at": "2026-10-12T13:22:35+00:00",
+    "last_checked_at": "2026-10-12T13:55:51+00:00",
     "last_alert_sent_price": 17416.0,
-    "consecutive_failures": 12,
+    "consecutive_failures": 13,
     "error_alert_sent": true,
     "out_of_stock": false,
     "price_history": [
@@ -31,6 +31,18 @@
         "price": 4103.05
       }
     ],
+    "last_error": "BLOCKED: Bot koruması (Robot Check / Captcha)"
+  },
+  "d3qp4akr": {
+    "id": "d3qp4akr",
+    "title": "Ürün",
+    "last_price": null,
+    "last_checked_at": "2026-10-12T13:55:48+00:00",
+    "last_alert_sent_price": null,
+    "consecutive_failures": 1,
+    "error_alert_sent": false,
+    "out_of_stock": false,
+    "price_history": [],
     "last_error": "BLOCKED: Bot koruması (Robot Check / Captcha)"
   }
 }

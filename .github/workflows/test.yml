@@ -1,0 +1,39 @@
+name: Test Suite (Python & Node)
+
+on:
+  push:
+    branches: [main, audit-fixes]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodu Çek
+        uses: actions/checkout@v4
+
+      - name: Python Ortamını Kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Python Bağımlılıklarını Yükle
+        run: |
+          pip install -r requirements.txt
+
+      - name: Python Testlerini Çalıştır (pytest)
+        env:
+          PYTHONPATH: .
+        run: |
+          pytest -v tests/
+
+      - name: Node.js Ortamını Kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Worker Birim Testlerini Çalıştır (node --test)
+        run: |
+          node --test tests/worker.test.js

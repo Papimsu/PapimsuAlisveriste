@@ -30,7 +30,7 @@ jobs:
       - name: Fiyatları Kontrol Et & Telegram Bildirimi Gönder
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_CHAT_ID: "-1004357390519"
         run: |
           python tracker.py
 

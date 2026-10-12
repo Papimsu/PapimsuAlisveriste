@@ -64,6 +64,20 @@ def fetch_amazon(soup: BeautifulSoup, raw_html: str) -> Dict[str, Any]:
             combined = f"{whole.get_text(strip=True)}.{fraction_text}"
             price_found = parse_price(combined)
 
+    # 3. Aşama: Sayfa içi gömülü veri ve Regex yedekleri (DOM değişse bile asla ıskalamaz)
+    if price_found is None:
+        amount_match = re.search(r'"priceAmount":\s*([0-9\.]+)', raw_html)
+        if amount_match:
+            try:
+                price_found = float(amount_match.group(1))
+            except Exception:
+                pass
+
+    if price_found is None:
+        display_match = re.search(r'"displayPrice":\s*"([^"]+)"', raw_html)
+        if display_match:
+            price_found = parse_price(display_match.group(1))
+
     # Satıcı Tespiti
     seller_name = "Üçüncü Taraf Satıcı"
     is_official = False

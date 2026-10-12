@@ -3,9 +3,9 @@
     "id": "d8wk9m6x",
     "title": "Pioneer DJ Pioneer DDJ-FLX4 Taşınabilir 2 Kanallı DJ Controller",
     "last_price": 17416.0,
-    "last_checked_at": "2026-10-12T12:00:34.436411",
+    "last_checked_at": "2026-10-12T13:22:35+00:00",
     "last_alert_sent_price": 17416.0,
-    "consecutive_failures": 11,
+    "consecutive_failures": 12,
     "error_alert_sent": true,
     "out_of_stock": false,
     "price_history": [
@@ -13,15 +13,16 @@
         "date": "2026-10-12",
         "price": 17416.0
       }
-    ]
+    ],
+    "last_error": "BLOCKED: Bot koruması (Robot Check / Captcha)"
   },
   "g3diacwk": {
     "id": "g3diacwk",
     "title": "Philips Hue Play Pack Ambiance Beyaz ve Renkli, Siyah, 2.6.6W Temel Paket Kiti, Alexa, Google Assistant ve Apple Homekit ile çalışır - 25.000 Saat Ampul Kullanım Ömrü",
     "last_price": 4103.05,
-    "last_checked_at": "2026-10-12T12:00:40.348968",
+    "last_checked_at": "2026-10-12T13:22:38+00:00",
     "last_alert_sent_price": null,
-    "consecutive_failures": 11,
+    "consecutive_failures": 12,
     "error_alert_sent": true,
     "out_of_stock": false,
     "price_history": [
@@ -29,6 +30,7 @@
         "date": "2026-10-12",
         "price": 4103.05
       }
-    ]
+    ],
+    "last_error": "BLOCKED: Bot koruması (Robot Check / Captcha)"
   }
 }

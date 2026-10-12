@@ -1,10 +1,15 @@
 {
-  "state": "ok",
+  "state": "degraded",
   "error": null,
   "items_checked": 2,
   "ok": 0,
   "failed": 2,
   "out_of_stock": 0,
-  "last_run_utc": "2026-10-12T12:46:11+00:00",
-  "last_run_tr": "12.10.2026 15:46"
+  "last_run_utc": "2026-10-12T13:22:38+00:00",
+  "last_run_tr": "12.10.2026 16:22",
+  "circuit_breaker_tripped": {
+    "www.amazon.com.tr": true
+  },
+  "skipped_due_to_budget": 0,
+  "skipped_due_circuit_breaker": 0
 }

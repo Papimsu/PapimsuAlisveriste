@@ -10,13 +10,27 @@ TEST_URLS = {
 }
 
 report = {"run_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"), "results": {}}
+os.makedirs("diagnostics", exist_ok=True)
+
 for name, url in TEST_URLS.items():
     t0 = time.time()
+    cleaned = scraper.clean_url(url)
+    resp_status = None
+    resp_len = 0
+    try:
+        r = scraper.requests.get(cleaned, headers=scraper.DEFAULT_HEADERS, impersonate="chrome124", timeout=25)
+        resp_status = r.status_code
+        resp_len = len(r.text)
+        is_blocked = ("Robot Check" in r.text or "validateCaptcha" in r.text or "ShieldSquare" in r.text)
+    except Exception as e:
+        is_blocked = str(e)
+
     d = fetch_product_data(url)
     report["results"][name] = {
         "success": d["success"], "price": d["price"], "seller": d["seller_name"],
         "official": d["is_official_seller"], "out_of_stock": d["out_of_stock"],
         "error": d["error"], "title": (d["title"] or "")[:60], "seconds": round(time.time() - t0, 1),
+        "http_status": resp_status, "body_length": resp_len, "block_detected": is_blocked
     }
     print(name, report["results"][name])
     time.sleep(3)

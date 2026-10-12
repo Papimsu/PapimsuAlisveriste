@@ -4,6 +4,15 @@ export default {
       return new Response("OK", { status: 200 });
     }
 
+    // S1: Webhook secret_token doğrulaması
+    const webhookSecret = env.WEBHOOK_SECRET;
+    if (webhookSecret) {
+      const secretHeader = request.headers.get("X-Telegram-Bot-Api-Secret-Token") || "";
+      if (!timingSafeEqual(secretHeader, webhookSecret)) {
+        return new Response("Forbidden: Invalid secret token", { status: 403 });
+      }
+    }
+
     try {
       const update = await request.json();
       const message = update.message;
@@ -273,3 +282,18 @@ async function saveWatchlist(env, items, sha, commitMsg) {
     body: JSON.stringify(body)
   });
 }
+
+function timingSafeEqual(a, b) {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  const aLen = a.length;
+  const bLen = b.length;
+  let diff = aLen ^ bLen;
+  for (let i = 0; i < Math.max(aLen, bLen); i++) {
+    const charA = i < aLen ? a.charCodeAt(i) : 0;
+    const charB = i < bLen ? b.charCodeAt(i) : 0;
+    diff |= charA ^ charB;
+  }
+  return diff === 0;
+}
+
+export { timingSafeEqual };

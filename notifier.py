@@ -1,17 +1,13 @@
 import os
 import httpx
 
-# Öncelikli bildirim hedefi: Ortak Aile Grubu (-1004357390519)
-FALLBACK_BOT_TOKEN = "8975854875:AAEYoCLeZ9gdzvcXNxoSqHpJ465J_aX3lJ4"
-FALLBACK_CHAT_ID = "-1004357390519"
-
 def send_telegram(message: str, bot_token: str = None, chat_id: str = None) -> bool:
     """
     Telegram Resmi Bot API kullanarak mesaj gönderir.
-    Varsayılan olarak ortak Telegram grubuna (-1004357390519) atar.
+    Ortam değişkenlerinden (Secrets) token ve chat ID okur.
     """
-    token = bot_token or os.environ.get("TELEGRAM_BOT_TOKEN") or FALLBACK_BOT_TOKEN
-    chat = chat_id or os.environ.get("TELEGRAM_CHAT_ID") or FALLBACK_CHAT_ID
+    token = bot_token or os.environ.get("TELEGRAM_BOT_TOKEN")
+    chat = chat_id or os.environ.get("TELEGRAM_CHAT_ID")
 
     if not token or not chat:
         print("[UYARI] Telegram ayarları tanımlı değil.")

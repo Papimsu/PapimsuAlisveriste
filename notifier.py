@@ -1,7 +1,13 @@
 import os
+from typing import Optional
 import httpx
 
-def send_telegram(message: str, bot_token: str = None, chat_id: str = None) -> bool:
+def send_telegram(
+    message: str,
+    bot_token: Optional[str] = None,
+    chat_id: Optional[str] = None,
+    parse_mode: Optional[str] = None
+) -> bool:
     """
     Telegram Resmi Bot API kullanarak mesaj gönderir.
     Ortam değişkenlerinden (Secrets) token ve chat ID okur.
@@ -10,7 +16,7 @@ def send_telegram(message: str, bot_token: str = None, chat_id: str = None) -> b
     chat = chat_id or os.environ.get("TELEGRAM_CHAT_ID")
 
     if not token or not chat:
-        print("[UYARI] Telegram ayarları tanımlı değil.")
+        print("[UYARI] Telegram ayarları tanımlı değil (TELEGRAM_BOT_TOKEN veya TELEGRAM_CHAT_ID eksik).")
         return False
 
     url = f"https://api.telegram.org/bot{token}/sendMessage"
@@ -19,6 +25,8 @@ def send_telegram(message: str, bot_token: str = None, chat_id: str = None) -> b
         "text": message,
         "disable_web_page_preview": False
     }
+    if parse_mode:
+        payload["parse_mode"] = parse_mode
 
     try:
         with httpx.Client(timeout=15.0) as client:

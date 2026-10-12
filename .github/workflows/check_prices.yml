@@ -37,7 +37,7 @@ jobs:
       - name: Fiyatları Kontrol Et & Telegram Bildirimi Gönder
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: "-1004357390519"
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           python tracker.py
 
@@ -45,7 +45,7 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add watchlist.json status.json
+          git add state.json status.json
           if git diff --staged --quiet; then
             echo "Değişiklik yok."
             exit 0
@@ -53,14 +53,14 @@ jobs:
           git commit -m "Auto: Update checked prices"
           for i in 1 2 3; do
             if git pull --rebase origin main; then
-              # Birleştirme sonrası JSON bozulduysa ASLA push etme (Telegram'dan eklenen ürünler korunur)
-              if python -c "import json; json.load(open('watchlist.json', encoding='utf-8'))"; then
+              # Birleştirme sonrası JSON bozulduysa ASLA push etme
+              if python -c "import json; json.load(open('state.json', encoding='utf-8'))"; then
                 if git push origin main; then
                   echo "Kaydedildi."
                   exit 0
                 fi
               else
-                echo "Birleştirme sonrası watchlist.json geçersiz! Bu turun güncellemesi atlanıyor."
+                echo "Birleştirme sonrası state.json geçersiz! Bu turun güncellemesi atlanıyor."
                 git reset --hard origin/main
                 exit 0
               fi

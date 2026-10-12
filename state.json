@@ -3,9 +3,9 @@
     "id": "d8wk9m6x",
     "title": "Pioneer DJ Pioneer DDJ-FLX4 Taşınabilir 2 Kanallı DJ Controller",
     "last_price": 17416.0,
-    "last_checked_at": "2026-10-12T17:07:28+00:00",
+    "last_checked_at": "2026-10-12T17:29:10+00:00",
     "last_alert_sent_price": 17416.0,
-    "consecutive_failures": 19,
+    "consecutive_failures": 20,
     "error_alert_sent": true,
     "out_of_stock": false,
     "price_history": [
@@ -37,9 +37,9 @@
     "id": "d3qp4akr",
     "title": "Arturia Minilab 3 Black, Klavye, Siyah Beyaz",
     "last_price": 5999.0,
-    "last_checked_at": "2026-10-12T17:07:27+00:00",
+    "last_checked_at": "2026-10-12T17:29:08+00:00",
     "last_alert_sent_price": null,
-    "consecutive_failures": 0,
+    "consecutive_failures": 1,
     "error_alert_sent": false,
     "out_of_stock": false,
     "price_history": [
@@ -48,7 +48,7 @@
         "price": 5999.0
       }
     ],
-    "last_error": null,
+    "last_error": "BLOCKED: Bot koruması (Robot Check / Captcha)",
     "near_target_alert_sent": false
   }
 }

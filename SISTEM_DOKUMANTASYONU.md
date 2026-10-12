@@ -72,3 +72,37 @@ Sistem **tamamen bulut üzerinde ve sıfır maliyetle ($0)** çalışacak şekil
 1. **Açık Şifre Yok:** Kodların içinde bot token'ları veya gizli anahtarlar düz metin olarak bulunmaz. Tüm anahtarlar GitHub Secrets ve Cloudflare Secrets kasasında saklanır.
 2. **Public Repo Avantajı:** Repo açık (public) olduğu için GitHub Actions çalışma dakikaları **tamamen sınırsız ve $0**'dır. 50-80 ürüne kadar tek kuruş maliyet çıkmaz.
 3. **Bozuk JSON & Çakışma Koruması:** Telegram'dan ürün eklenirken aynı anda GitHub cron'u fiyat güncellerse, rebase push ve JSON doğrulama mekanizması sayesinde veriler asla bozulmaz.
+
+---
+
+## 🚨 S4: Telegram Bot Token İptal ve Yenileme Kılavuzu
+
+Eğer bot token'ı herhangi bir şekilde açığa çıkarsa veya şüphe oluşursa aşağıdaki 4 adımı sırasıyla uygulayın:
+
+### 1. Telegram'da Eski Token'ı İptal Edin (@BotFather)
+1. Telegram uygulamasında [@BotFather](https://t.me/BotFather) botunu açın.
+2. `/revoke` komutunu gönderin.
+3. İptal edilecek botunuzu listeden seçin.
+4. BotFather eski token'ı derhal geçersiz kılacak ve size yeni bir token (`<YENI_BOT_TOKEN>`) üretecektir.
+
+### 2. Cloudflare Worker Secret Değişkenlerini Güncelleyin
+Cloudflare Dashboard -> **Workers & Pages** -> Worker'ınızı seçin -> **Settings** -> **Variables and Secrets**:
+1. `BOT_TOKEN` değerini yeni token (`<YENI_BOT_TOKEN>`) ile güncelleyin ve kaydedip dağıtın (Deploy).
+2. `WEBHOOK_SECRET` değerini güvenli rastgele bir string (örn: `openssl rand -hex 20`) ile tanımlayın.
+3. `ALLOWED_CHAT_IDS` değerine yetkili chat ID'lerini virgülle ayrılmış olarak girin (örn: `12345678,-10012345678`).
+
+### 3. GitHub Secrets Kasasını Güncelleyin
+GitHub Repository -> **Settings** -> **Secrets and variables** -> **Actions**:
+1. `TELEGRAM_BOT_TOKEN` secret'ını düzenleyin ve `<YENI_BOT_TOKEN>` yapıştırın.
+2. `TELEGRAM_CHAT_ID` secret'ının tanımlı olduğundan emin olun.
+
+### 4. Telegram Webhook'unu Yeni Token ve Secret Token ile Yeniden Kurun
+Tarayıcınızdan veya terminalden aşağıdaki isteği göndererek webhook'u yeni token ve güvenlik başlığıyla aktifleştirin:
+
+```bash
+curl -F "url=https://<WORKER_ADRESINIZ>.workers.dev" \
+     -F "secret_token=<WEBHOOK_SECRET>" \
+     "https://api.telegram.org/bot<YENI_BOT_TOKEN>/setWebhook"
+```
+
+Yanıt olarak `{"ok":true,"result":true,"description":"Webhook was set"}` döndüğünde sistem tamamen yeni token ve secret token korumasıyla devreye girmiş olur.

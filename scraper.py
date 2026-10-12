@@ -1,5 +1,6 @@
 import re
 import json
+import time
 from typing import Optional, Dict, Any
 from bs4 import BeautifulSoup
 from curl_cffi import requests
@@ -193,43 +194,55 @@ def fetch_product_data(url: str) -> Dict[str, Any]:
         "error": None
     }
 
-    try:
-        resp = requests.get(
-            cleaned,
-            headers=DEFAULT_HEADERS,
-            impersonate="chrome124",
-            timeout=25,
-            allow_redirects=True
-        )
+    # Anlık bloklanmalara karşı 2 farklı tarayıcı parmak izi ile deneme
+    profiles = ["chrome124", "safari17_0"]
+    for attempt, browser in enumerate(profiles):
+        try:
+            resp = requests.get(
+                cleaned,
+                headers=DEFAULT_HEADERS,
+                impersonate=browser,
+                timeout=25,
+                allow_redirects=True
+            )
 
-        if resp.status_code != 200:
-            result["error"] = f"HTTP {resp.status_code}"
-            return result
+            if resp.status_code != 200:
+                result["error"] = f"HTTP {resp.status_code}"
+                continue
 
-        soup = BeautifulSoup(resp.text, "html.parser")
-        final_url = str(resp.url)
+            soup = BeautifulSoup(resp.text, "html.parser")
+            final_url = str(resp.url)
 
-        if "amazon" in final_url:
-            parsed = fetch_amazon(soup, resp.text)
-        elif "trendyol" in final_url:
-            parsed = fetch_trendyol(soup, resp.text)
-        elif "hepsiburada" in final_url:
-            parsed = fetch_hepsiburada(soup, resp.text)
-        else:
-            result["error"] = "Desteklenmeyen platform"
-            return result
+            if "amazon" in final_url:
+                parsed = fetch_amazon(soup, resp.text)
+            elif "trendyol" in final_url:
+                parsed = fetch_trendyol(soup, resp.text)
+            elif "hepsiburada" in final_url:
+                parsed = fetch_hepsiburada(soup, resp.text)
+            else:
+                result["error"] = "Desteklenmeyen platform"
+                return result
 
-        result["title"] = parsed.get("title") or "Ürün"
-        result["price"] = parsed.get("price")
-        result["seller_name"] = parsed.get("seller_name", "Satıcı")
-        result["is_official_seller"] = parsed.get("is_official_seller", False)
-        result["platform"] = parsed.get("platform", "Pazar Yeri")
-        result["success"] = (result["price"] is not None)
-        return result
+            # Fiyat başarıyla bulunduysa sonucu döndür
+            if parsed.get("price") is not None:
+                result["title"] = parsed.get("title") or "Ürün"
+                result["price"] = parsed.get("price")
+                result["seller_name"] = parsed.get("seller_name", "Satıcı")
+                result["is_official_seller"] = parsed.get("is_official_seller", False)
+                result["platform"] = parsed.get("platform", "Pazar Yeri")
+                result["success"] = True
+                result["error"] = None
+                return result
+            else:
+                # Fiyat okunamadıysa kısa bir mola verip 2. tarayıcı profiliyle dene
+                result["error"] = "Element veya fiyat bulunamadı"
+                time.sleep(2.0)
 
-    except Exception as e:
-        result["error"] = str(e)
-        return result
+        except Exception as e:
+            result["error"] = str(e)
+            time.sleep(2.0)
+
+    return result
 
 # Geriye dönük uyumluluk
 fetch_amazon_product = fetch_product_data

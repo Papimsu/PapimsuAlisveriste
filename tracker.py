@@ -51,15 +51,15 @@ def check_all_products():
             item["last_error"] = err_msg
             updated = True
             
-            # İlk kritik arızada (veya 2. kontrolde teyit edilince) Tek Seferlik Sistem Uyarısı gönder
-            if fail_count == 2 and not item.get("error_alert_sent", False):
+            # İlk kritik arızada (üst üste 4 kontrolde, yani yaklaşık 1 saat teyit edilince) Tek Seferlik Sistem Uyarısı gönder
+            if fail_count == 4 and not item.get("error_alert_sent", False):
                 system_alert = (
                     f"⚠️ SİSTEM UYARISI: Ürün Fiyatı Okunamıyor!\n\n"
                     f"📦 Ürün: {item.get('name', 'Bilinmeyen Ürün')}\n"
                     f"🌐 Platform: {data.get('platform', 'Bilinmeyen')}\n"
                     f"❌ Hata: {err_msg}\n"
                     f"🔗 Link:\n{url}\n\n"
-                    f"ℹ️ Bot bu ürün için 2 turdur veri alamıyor. Sorun çözülene kadar grup gereksiz mesajla boğulmayacaktır. Düzeldiğinde bildireceğim."
+                    f"ℹ️ Bot bu ürün için 1 saattir (4 tur) veri alamıyor. Sorun çözülene kadar grup gereksiz mesajla boğulmayacaktır. Düzeldiğinde bildireceğim."
                 )
                 send_telegram(system_alert)
                 item["error_alert_sent"] = True

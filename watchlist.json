@@ -11,7 +11,7 @@
     "last_alert_sent_price": 17416.0,
     "active": true,
     "last_checked_at": "2026-10-11T23:53:53.457452",
-    "consecutive_failures": 4,
+    "consecutive_failures": 5,
     "last_error": "Element veya fiyat bulunamadı",
     "error_alert_sent": true
   }

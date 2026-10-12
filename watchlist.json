@@ -1,33 +1,20 @@
 [
   {
     "id": "d8wk9m6x",
-    "name": "Pioneer DJ Pioneer DDJ-FLX4 Taşınabilir 2 Kanallı DJ Controller",
     "url": "https://www.amazon.com.tr/dp/B0BK25SY9G",
-    "normal_price": 17416,
-    "target_price": 17000,
-    "effective_target": 17850,
+    "name": "Pioneer DJ Pioneer DDJ-FLX4 Taşınabilir 2 Kanallı DJ Controller",
+    "target_price": 17000.0,
     "discount_threshold_percent": null,
-    "last_checked_price": 17416.0,
-    "last_alert_sent_price": 17416,
     "active": true,
-    "last_checked_at": "2026-10-12T12:00:34.436411",
-    "consecutive_failures": 1,
-    "last_error": "Element veya fiyat bulunamadı",
-    "error_alert_sent": false
+    "created_at": "2026-10-12T09:34:25+00:00"
   },
   {
     "id": "g3diacwk",
-    "name": "Philips Hue Play Pack Ambiance Beyaz ve Renkli, Siyah, 2.6.6W Temel Paket Kiti, Alexa, Google Assistant ve Apple Homekit ile çalışır - 25.000 Saat Ampul Kullanım Ömrü",
     "url": "https://www.amazon.com.tr/dp/B07FYDGD7R",
-    "normal_price": 4103.05,
-    "target_price": 4000,
-    "effective_target": 4200,
+    "name": "Philips Hue Play Pack Ambiance Beyaz ve Renkli, Siyah, 2.6.6W Temel Paket Kiti, Alexa, Google Assistant ve Apple Homekit ile çalışır - 25.000 Saat Ampul Kullanım Ömrü",
+    "target_price": 4000.0,
     "discount_threshold_percent": null,
-    "last_checked_price": 4103.05,
-    "last_alert_sent_price": null,
     "active": true,
-    "consecutive_failures": 1,
-    "last_error": "Element veya fiyat bulunamadı",
-    "last_checked_at": "2026-10-12T12:00:40.348968"
+    "created_at": "2026-10-12T09:34:25+00:00"
   }
 ]

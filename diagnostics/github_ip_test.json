@@ -1,25 +1,31 @@
 {
-  "run_at_utc": "2026-10-12T07:06:17+00:00",
+  "run_at_utc": "2026-10-12T13:40:02+00:00",
   "results": {
     "Amazon": {
       "success": false,
       "price": null,
-      "seller": "Satıcı tespit edilemedi",
+      "seller": "Bilinmiyor",
       "official": false,
       "out_of_stock": false,
-      "error": "Element veya fiyat bulunamadı",
-      "title": "Ürün",
-      "seconds": 5.3
+      "error": "Bot koruması (Robot Check / Captcha)",
+      "title": "Amazon Ürünü",
+      "seconds": 0.7,
+      "http_status": 200,
+      "body_length": 4153,
+      "block_detected": true
     },
     "Trendyol": {
       "success": false,
       "price": null,
-      "seller": "Trendyol Satıcısı",
+      "seller": "Satıcı Bilgisi Yok",
       "official": false,
       "out_of_stock": false,
-      "error": "Element veya fiyat bulunamadı",
+      "error": "Erişim engellendi (HTTP 403)",
       "title": "Ürün",
-      "seconds": 5.1
+      "seconds": 0.7,
+      "http_status": 403,
+      "body_length": 0,
+      "block_detected": false
     },
     "Hepsiburada": {
       "success": true,
@@ -29,7 +35,10 @@
       "out_of_stock": false,
       "error": null,
       "title": "PioneerDj Ddj-Flx4 2 Kanal Dj Controller",
-      "seconds": 1.2
+      "seconds": 1.4,
+      "http_status": 200,
+      "body_length": 746776,
+      "block_detected": false
     }
   }
 }

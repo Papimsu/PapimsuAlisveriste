@@ -60,8 +60,8 @@ async function handleTelegramUpdate(update, env) {
   const replyToId = message.reply_to_message?.message_id;
   const text = message.text.trim();
 
-  // S2: Dinamik Chat ID Yetkilendirmesi
-  const rawAllowed = env.ALLOWED_CHAT_IDS || "";
+  // S2: Dinamik Chat ID Yetkilendirmesi (ALLOWED_CHAT_IDS veya ALLOWED_CHAT_ID)
+  const rawAllowed = env.ALLOWED_CHAT_IDS || env.ALLOWED_CHAT_ID || "";
   const allowedChats = rawAllowed.split(",").map((id) => id.trim()).filter(Boolean);
   if (allowedChats.length === 0 || !allowedChats.includes(chatId)) {
     console.warn(`Yetkisiz Chat ID: ${chatId}`);
@@ -346,7 +346,8 @@ async function finalizeProductRule(env, chatId, messageId, sessionKey, pending, 
 // R3: DEAD MAN'S SWITCH KONTROLÜ
 // ==========================================
 async function checkDeadMansSwitch(env) {
-  if (!env.GITHUB_REPO || !env.GITHUB_TOKEN || !env.BOT_TOKEN || !env.ALLOWED_CHAT_IDS) return;
+  const allowed = env.ALLOWED_CHAT_IDS || env.ALLOWED_CHAT_ID;
+  if (!env.GITHUB_REPO || !env.GITHUB_TOKEN || !env.BOT_TOKEN || !allowed) return;
 
   const url = `https://api.github.com/repos/${env.GITHUB_REPO}/actions/workflows/check_prices.yml/runs?per_page=1`;
   const res = await fetch(url, {
@@ -368,7 +369,7 @@ async function checkDeadMansSwitch(env) {
   if (diffMinutes > 75) {
     const alreadyAlerted = env.SESSIONS ? await env.SESSIONS.get("dms_alert_sent") : null;
     if (!alreadyAlerted) {
-      const primaryChat = env.ALLOWED_CHAT_IDS.split(",")[0].trim();
+      const primaryChat = allowed.split(",")[0].trim();
       const warnMsg =
         "⚠️ <b>SİSTEM UYARISI: Fiyat Kontrolü Durmuş Olabilir!</b>\n\n" +
         `GitHub Actions en son <b>${diffMinutes} dakika önce</b> çalıştı (Beklenen: her 15 dk).\n` +
@@ -384,7 +385,7 @@ async function checkDeadMansSwitch(env) {
     // Düzelme durumu: daha önce uyarı atılmışsa ve şimdi son çalışma <= 75 dk ise düzelme mesajı at
     const alreadyAlerted = env.SESSIONS ? await env.SESSIONS.get("dms_alert_sent") : null;
     if (alreadyAlerted) {
-      const primaryChat = env.ALLOWED_CHAT_IDS.split(",")[0].trim();
+      const primaryChat = allowed.split(",")[0].trim();
       const recMsg =
         "✅ <b>SİSTEM NORMALE DÖNDÜ:</b> Fiyat kontrol otomasyonu (GitHub Actions) yeniden çalışmaya başladı.\n" +
         `Son başarılı çalışma: <b>${diffMinutes} dakika önce</b>.`;

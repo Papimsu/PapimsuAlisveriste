@@ -196,7 +196,7 @@ def process_single_item(
 
     # --- 1. Stokta Yok ---
     if data.get("out_of_stock"):
-        stats["out_of_stock"] += 1
+        stats["out_of_stock"] = stats.get("out_of_stock", 0) + 1
         print("📭 Ürün stokta yok.")
         item_state["consecutive_failures"] = 0
         item_state["last_error"] = None
@@ -219,7 +219,7 @@ def process_single_item(
         err_type = data.get("error_type") or "PARSE_FAIL"
         err_msg = data.get("error") or err_type
         print(f"⚠️ Hata [{err_type}]: {err_msg}")
-        stats["failed"] += 1
+        stats["failed"] = stats.get("failed", 0) + 1
 
         fail_count = int(item_state.get("consecutive_failures", 0)) + 1
         item_state["consecutive_failures"] = fail_count
@@ -265,7 +265,7 @@ def process_single_item(
         current_price = float(confirm["price"])
         data = confirm
 
-    stats["ok"] += 1
+    stats["ok"] = stats.get("ok", 0) + 1
 
     # Arıza sonrası iyileşme bildirimi
     if item_state.get("error_alert_sent", False):

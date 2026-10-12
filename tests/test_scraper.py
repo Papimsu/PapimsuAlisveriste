@@ -87,3 +87,10 @@ def test_hepsiburada_scraper_out_of_stock():
     res = fetch_product_data("https://www.hepsiburada.com/p/123", html_override=html)
     assert res["success"] is True
     assert res["out_of_stock"] is True
+
+def test_amazon_scraper_recommendation_only():
+    html = read_fixture("amazon_recommendation_only.html")
+    res = fetch_product_data("https://www.amazon.com.tr/dp/B0BK25SY9G", html_override=html)
+    # A4: Öneri/sponsorlu ürün kutusundaki fiyat (850 TL) ana ürün fiyatı olarak okunmamalıdır
+    assert res["price"] != 850.0
+    assert res["price"] is None or res.get("confidence") == "low"

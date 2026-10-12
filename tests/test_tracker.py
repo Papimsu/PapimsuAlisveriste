@@ -91,3 +91,159 @@ def test_price_history_and_median_reference():
 
     expected_median = statistics.median(prices)
     assert get_reference_price(item_state) == expected_median
+
+def test_circuit_breaker_tripping_and_skipping():
+    """R1: Aynı domainde 2 ardışık BLOCKED sonrası devre kesici devreye girer."""
+    domain_blocked = {}
+    circuit_breakers = {}
+    stats = {}
+    collected_failures = []
+
+    item1 = {"url": "https://www.amazon.com.tr/dp/B01", "name": "Item 1"}
+    item2 = {"url": "https://www.amazon.com.tr/dp/B02", "name": "Item 2"}
+    item3 = {"url": "https://www.amazon.com.tr/dp/B03", "name": "Item 3"}
+
+    # Mock fetch returning BLOCKED
+    from tracker import process_single_item
+    import tracker
+
+    original_fetch = tracker.fetch_product_data
+    try:
+        tracker.fetch_product_data = lambda url: {
+            "success": False, "price": None, "error_type": "BLOCKED", "error": "Bot checkpoint"
+        }
+
+        # 1. İstek BLOCKED (sayac = 1)
+        state1 = {}
+        process_single_item(item1, state1, stats, domain_blocked, circuit_breakers, collected_failures)
+        assert circuit_breakers.get("www.amazon.com.tr") is not True
+
+        # 2. İstek BLOCKED (sayac = 2 -> Devre kesici tetiklenmeli)
+        state2 = {}
+        process_single_item(item2, state2, stats, domain_blocked, circuit_breakers, collected_failures)
+        assert circuit_breakers.get("www.amazon.com.tr") is True
+
+        # 3. İstek: Devre kesici aktif olduğundan kazıma çağrılmadan doğrudan atlanmalı
+        state3 = {}
+        skipped = not process_single_item(item3, state3, stats, domain_blocked, circuit_breakers, collected_failures)
+        assert skipped is True
+        assert stats.get("skipped_due_circuit_breaker") == 1
+    finally:
+        tracker.fetch_product_data = original_fetch
+
+def test_aggregated_alerts_five_failures_single_message():
+    """R2: 5 hatalı üründe her biri için ayrı spam atılmaz; tek bir toplu özet mesajı gönderilir."""
+    from tracker import handle_aggregated_alerts
+    import tracker
+
+    collected_failures = []
+    for i in range(5):
+        collected_failures.append({
+            "name": f"Hatalı Ürün {i+1}",
+            "domain": "www.amazon.com.tr",
+            "error_type": "PARSE_FAIL",
+            "error_msg": "Element bulunamadı",
+            "consecutive_failures": 4, # FAILURE_ALERT_THRESHOLD eşiğinde
+            "url": f"https://www.amazon.com.tr/dp/{i}",
+            "item_state": {"error_alert_sent": False}
+        })
+
+    sent_alerts = []
+    original_send = tracker.send_telegram
+    try:
+        tracker.send_telegram = lambda msg, **kw: (sent_alerts.append(msg) or True)
+        handle_aggregated_alerts(collected_failures, {})
+
+        # Tam olarak 1 adet toplu uyarı gitmeli (5 ayrı mesaj değil!)
+        assert len(sent_alerts) == 1
+        assert "SİSTEM UYARISI" in sent_alerts[0]
+        for i in range(5):
+            assert f"Hatalı Ürün {i+1}" in sent_alerts[0]
+            assert collected_failures[i]["item_state"]["error_alert_sent"] is True
+    finally:
+        tracker.send_telegram = original_send
+
+def test_time_budget_incremental_save_and_no_repeat_alert():
+    """C3: fetch'i 30 sn bekleten mock ile bütçe aşılmıyor, işlenen ürünlerin state'i diskte, ikinci çalıştırmada aynı alarm tekrar gitmiyor."""
+    import tempfile
+    import json
+    import os
+    import tracker
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_watchlist = os.path.join(tmpdir, "watchlist.json")
+        tmp_state = os.path.join(tmpdir, "state.json")
+        tmp_status = os.path.join(tmpdir, "status.json")
+
+        items = [
+            {"id": "p1", "url": "https://www.amazon.com.tr/dp/P1", "name": "Ürün 1", "target_price": 4000.0, "active": True},
+            {"id": "p2", "url": "https://www.amazon.com.tr/dp/P2", "name": "Ürün 2", "target_price": 4000.0, "active": True},
+            {"id": "p3", "url": "https://www.amazon.com.tr/dp/P3", "name": "Ürün 3", "target_price": 4000.0, "active": True}
+        ]
+
+        with open(tmp_watchlist, "w", encoding="utf-8") as f:
+            json.dump(items, f)
+
+        orig_w = tracker.WATCHLIST_PATH
+        orig_s = tracker.STATE_PATH
+        orig_stat = tracker.STATUS_PATH
+        orig_fetch = tracker.fetch_product_data
+        orig_send = tracker.send_telegram
+        orig_time = tracker.time.time
+
+        simulated_time = [1000.0]
+        sent_messages = []
+
+        def mock_time():
+            return simulated_time[0]
+
+        def mock_fetch(url):
+            # Her fetch çağrısı 30 saniye sürer
+            simulated_time[0] += 30.0
+            return {
+                "success": True,
+                "price": 3500.0,
+                "title": "Ürün",
+                "seller_name": "Amazon",
+                "is_official_seller": True,
+                "platform": "Amazon",
+                "out_of_stock": False
+            }
+
+        try:
+            tracker.WATCHLIST_PATH = tmp_watchlist
+            tracker.STATE_PATH = tmp_state
+            tracker.STATUS_PATH = tmp_status
+            tracker.fetch_product_data = mock_fetch
+            tracker.send_telegram = lambda msg, **kw: (sent_messages.append(msg) or True)
+            tracker.time.time = mock_time
+
+            # 1. Tur: 50s bütçe ile çalıştır
+            tracker.check_all_products(time_budget_sec=50)
+
+            # Bütçe aşılmadı ve kalan 2 ürün atlandı
+            with open(tmp_status, "r", encoding="utf-8") as f:
+                stat = json.load(f)
+            assert stat["skipped_due_to_budget"] == 2
+            assert stat["ok"] == 1
+
+            # İşlenen ürünün state'i diskte anında mevcut
+            with open(tmp_state, "r", encoding="utf-8") as f:
+                disk_state = json.load(f)
+            assert "p1" in disk_state
+            assert disk_state["p1"]["last_price"] == 3500.0
+            assert disk_state["p1"]["last_alert_sent_price"] == 3500.0
+            assert len(sent_messages) == 1
+
+            # 2. Tur: İşlenen ürün (p1) tekrar kontrol edildiğinde (aynı fiyat 3500 TL için) alarm TEKRAR gitmemeli
+            with open(tmp_watchlist, "w", encoding="utf-8") as f:
+                json.dump([items[0]], f)
+            tracker.check_all_products(time_budget_sec=50)
+            assert len(sent_messages) == 1  # p1 için ikinci alarm gitmedi!
+        finally:
+            tracker.WATCHLIST_PATH = orig_w
+            tracker.STATE_PATH = orig_s
+            tracker.STATUS_PATH = orig_stat
+            tracker.fetch_product_data = orig_fetch
+            tracker.send_telegram = orig_send
+            tracker.time.time = orig_time

@@ -1,0 +1,16 @@
+name = "amazon-tracker-worker"
+main = "cloudflare_worker.js"
+compatibility_date = "2024-04-01"
+
+# R3: Dead Man's Switch Cron Trigger (Her 30 dakikada bir kontrol)
+[triggers]
+crons = ["*/30 * * * *"]
+
+# Oturum ve kural geçici verisi için KV Namespace
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "<CLOUDFLARE_KV_ID>"
+
+# Ortam değişkenleri (Secret olanlar dashboard veya `wrangler secret put` ile verilir)
+[vars]
+GITHUB_REPO = "<GITHUB_KULLANICI_ADI>/<REPO_ADI>"

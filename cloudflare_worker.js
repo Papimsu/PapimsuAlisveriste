@@ -380,6 +380,19 @@ async function checkDeadMansSwitch(env) {
         await env.SESSIONS.put("dms_alert_sent", "1", { expirationTtl: 86400 });
       }
     }
+  } else {
+    // Düzelme durumu: daha önce uyarı atılmışsa ve şimdi son çalışma <= 75 dk ise düzelme mesajı at
+    const alreadyAlerted = env.SESSIONS ? await env.SESSIONS.get("dms_alert_sent") : null;
+    if (alreadyAlerted) {
+      const primaryChat = env.ALLOWED_CHAT_IDS.split(",")[0].trim();
+      const recMsg =
+        "✅ <b>SİSTEM NORMALE DÖNDÜ:</b> Fiyat kontrol otomasyonu (GitHub Actions) yeniden çalışmaya başladı.\n" +
+        `Son başarılı çalışma: <b>${diffMinutes} dakika önce</b>.`;
+      await sendTelegram(env.BOT_TOKEN, primaryChat, recMsg, { parseMode: "HTML" });
+      if (env.SESSIONS) {
+        await env.SESSIONS.delete("dms_alert_sent");
+      }
+    }
   }
 }
 
@@ -684,5 +697,8 @@ export {
   parseUserInputPrice,
   validateAndCleanUrl,
   chunkMessage,
-  htmlEscape
+  htmlEscape,
+  checkDeadMansSwitch,
+  saveWatchlistWithRetry,
+  handleTelegramUpdate
 };

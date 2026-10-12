@@ -27,8 +27,21 @@ def migrate(watchlist_path="watchlist.json", state_path="state.json"):
 
     now_iso = datetime.now(timezone.utc).isoformat(timespec="seconds")
 
+    existing_state = {}
+    if os.path.exists(state_path):
+        try:
+            with open(state_path, "r", encoding="utf-8") as f:
+                raw_s = json.load(f)
+                if isinstance(raw_s, dict):
+                    existing_state = raw_s
+                elif isinstance(raw_s, list):
+                    existing_state = {x["id"]: x for x in raw_s if "id" in x}
+        except Exception:
+            existing_state = {}
+
     for item in legacy_data:
         item_id = item.get("id") or os.urandom(4).hex()
+        prev_s = existing_state.get(item_id, {})
         
         # Config fields (only user configuration)
         target_price = None
@@ -48,19 +61,20 @@ def migrate(watchlist_path="watchlist.json", state_path="state.json"):
         config_item = {
             "id": item_id,
             "url": item.get("url", ""),
-            "name": item.get("name") or "Ürün",
+            "name": item.get("name") or prev_s.get("title") or "Ürün",
             "target_price": target_price,
             "discount_threshold_percent": discount_pct,
             "active": bool(item.get("active", True)),
-            "created_at": item.get("created_at") or now_iso
+            "created_at": item.get("created_at") or prev_s.get("created_at") or now_iso
         }
         clean_watchlist.append(config_item)
 
         # State fields (machine state and tracking history)
         last_price = None
-        if item.get("last_checked_price") is not None:
+        val_lp = item.get("last_checked_price") if item.get("last_checked_price") is not None else prev_s.get("last_price")
+        if val_lp is not None:
             try:
-                last_price = float(item["last_checked_price"])
+                last_price = float(val_lp)
             except (ValueError, TypeError):
                 last_price = None
         elif item.get("normal_price") is not None:
@@ -70,13 +84,14 @@ def migrate(watchlist_path="watchlist.json", state_path="state.json"):
                 last_price = None
 
         last_alert = None
-        if item.get("last_alert_sent_price") is not None:
+        val_la = item.get("last_alert_sent_price") if item.get("last_alert_sent_price") is not None else prev_s.get("last_alert_sent_price")
+        if val_la is not None:
             try:
-                last_alert = float(item["last_alert_sent_price"])
+                last_alert = float(val_la)
             except (ValueError, TypeError):
                 last_alert = None
 
-        price_history = item.get("price_history", [])
+        price_history = item.get("price_history") or prev_s.get("price_history", [])
         if not price_history and last_price:
             price_history = [{
                 "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
@@ -85,13 +100,13 @@ def migrate(watchlist_path="watchlist.json", state_path="state.json"):
 
         clean_state[item_id] = {
             "id": item_id,
-            "title": item.get("name") or "Ürün",
+            "title": item.get("name") or prev_s.get("title") or "Ürün",
             "last_price": last_price,
-            "last_checked_at": item.get("last_checked_at"),
+            "last_checked_at": item.get("last_checked_at") or prev_s.get("last_checked_at"),
             "last_alert_sent_price": last_alert,
-            "consecutive_failures": int(item.get("consecutive_failures", 0)),
-            "error_alert_sent": bool(item.get("error_alert_sent", False)),
-            "out_of_stock": bool(item.get("out_of_stock", False)),
+            "consecutive_failures": int(item.get("consecutive_failures", prev_s.get("consecutive_failures", 0))),
+            "error_alert_sent": bool(item.get("error_alert_sent", prev_s.get("error_alert_sent", False))),
+            "out_of_stock": bool(item.get("out_of_stock", prev_s.get("out_of_stock", False))),
             "price_history": price_history
         }
 

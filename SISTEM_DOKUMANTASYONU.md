@@ -52,7 +52,7 @@ Sistem **tamamen bulut üzerinde ve sıfır maliyetle ($0)** çalışacak şekil
   * Sadece yeni dip fiyatlarda alarm verme (spam önleme).
   * Stok tükenmesi tespiti (`out_of_stock`).
   * Durum takibi ve kalp atışı (`status.json`).
-* **`notifier.py`**: Telegram Bot API istemcisi. Bildirimleri doğrudan ortak aile grubuna (`-1004357390519`) gönderir.
+* **`notifier.py`**: Telegram Bot API istemcisi. Bildirimleri doğrudan yapılandırılan Telegram grubuna (`<CHAT_ID>`) gönderir.
 * **`.github/workflows/check_prices.yml`**: Her 15 dakikada bir (`*/15 * * * *`) çalışan GitHub Actions otomasyonu.
 * **`cloudflare_worker.js`**: Telegram Webhook'unu karşılayan serverless kod.
 * **`watchlist.json`**: Takipteki ürünlerin veritabanı.

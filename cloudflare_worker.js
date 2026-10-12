@@ -25,8 +25,15 @@ export default {
       const messageId = message.message_id;
       const text = message.text.trim();
 
-      const allowedChats = ["8958109267", "-1004357390519"];
-      if (!allowedChats.includes(chatId)) {
+      // S2: Yetkili Chat ID'ler ortam değişkeninden (ALLOWED_CHAT_IDS) okunur
+      const rawAllowed = env.ALLOWED_CHAT_IDS || "";
+      const allowedChats = rawAllowed
+        .split(",")
+        .map((id) => id.trim())
+        .filter(Boolean);
+
+      if (allowedChats.length === 0 || !allowedChats.includes(chatId)) {
+        console.warn(`Yetkisiz Chat ID engellendi: ${chatId}`);
         return new Response("OK", { status: 200 });
       }
 

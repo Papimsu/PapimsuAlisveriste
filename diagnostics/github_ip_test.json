@@ -1,0 +1,35 @@
+{
+  "run_at_utc": "2026-10-12T07:06:17+00:00",
+  "results": {
+    "Amazon": {
+      "success": false,
+      "price": null,
+      "seller": "Satıcı tespit edilemedi",
+      "official": false,
+      "out_of_stock": false,
+      "error": "Element veya fiyat bulunamadı",
+      "title": "Ürün",
+      "seconds": 5.3
+    },
+    "Trendyol": {
+      "success": false,
+      "price": null,
+      "seller": "Trendyol Satıcısı",
+      "official": false,
+      "out_of_stock": false,
+      "error": "Element veya fiyat bulunamadı",
+      "title": "Ürün",
+      "seconds": 5.1
+    },
+    "Hepsiburada": {
+      "success": true,
+      "price": 17969.0,
+      "seller": "Merlin Elektronik",
+      "official": false,
+      "out_of_stock": false,
+      "error": null,
+      "title": "PioneerDj Ddj-Flx4 2 Kanal Dj Controller",
+      "seconds": 1.2
+    }
+  }
+}

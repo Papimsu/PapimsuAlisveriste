@@ -136,6 +136,17 @@ def fetch_amazon(soup: BeautifulSoup, raw_html: str) -> Dict[str, Any]:
         if len(amounts) == 1:
             price_found = parse_price(amounts.pop())
 
+    # 6. Güçlü Genel Yedek: Sayfadaki priceToPay veya apexPriceToPay (Amazon mobil/dinamik şablon uyumu)
+    if price_found is None:
+        gen_el = soup.find("span", class_="priceToPay") or soup.find("span", class_="apexPriceToPay")
+        if gen_el:
+            price_found = _amazon_price_from_span(gen_el)
+
+    if price_found is None:
+        disp_match = re.search(r'"displayPrice":\s*"([^"]+)"', raw_html)
+        if disp_match:
+            price_found = parse_price(disp_match.group(1))
+
     # Stok durumu
     avail = soup.find(id="availability")
     avail_text = avail.get_text(" ", strip=True).lower() if avail else ""
@@ -205,6 +216,17 @@ def fetch_trendyol(soup: BeautifulSoup, raw_html: str) -> Dict[str, Any]:
     if not title:
         title_elem = soup.find("h1", class_="pr-new-br") or soup.find("h1")
         title = title_elem.get_text(" ", strip=True) if title_elem else None
+
+    # 2. JSON-LD'den fiyat gelmediyse Trendyol DOM veya sayfa içi JSON verisi
+    if price_found is None:
+        p_elem = soup.find("span", class_="prc-dsc") or soup.find("span", class_="prc-slg") or soup.find("div", class_="product-price-container")
+        if p_elem:
+            price_found = parse_price(p_elem.get_text(strip=True))
+
+    if price_found is None:
+        ty_p_match = re.search(r'"discountedPrice":\{"value":([0-9\.]+)', raw_html) or re.search(r'"originalPrice":\{"value":([0-9\.]+)', raw_html) or re.search(r'"sellingPrice":\{"value":([0-9\.]+)', raw_html)
+        if ty_p_match:
+            price_found = parse_price(ty_p_match.group(1))
 
     # Satıcı (JSON-LD'de yoksa sayfa içi veriden)
     if seller_name == "Trendyol Satıcısı":

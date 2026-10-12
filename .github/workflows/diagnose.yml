@@ -2,14 +2,12 @@ name: Teşhis - GitHub IP'sinden 3 Site Testi
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
 
 permissions:
   contents: write
 
 concurrency:
-  group: price-checker
+  group: diagnose
   cancel-in-progress: false
 
 jobs:

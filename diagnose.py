@@ -1,6 +1,6 @@
-"""GitHub Actions sunucusunun (veri merkezi IP'si) 3 siteye erişebildiğini doğrular. Telegram'a mesaj atmaz."""
 import json, os, time
 from datetime import datetime, timezone
+import scraper
 from scraper import fetch_product_data
 
 TEST_URLS = {

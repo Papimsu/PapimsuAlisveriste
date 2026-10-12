@@ -2,8 +2,8 @@ name: 7/24 Amazon Price & Glitch Checker
 
 on:
   schedule:
-    # Her 15 dakikada bir otomatik çalışır
-    - cron: '*/15 * * * *'
+    # Her 25 dakikada bir otomatik çalışır (2.000 dk ücretsiz kotayı asla aşmaz)
+    - cron: '*/25 * * * *'
   workflow_dispatch: # Elle tetikleme
 
 permissions:
@@ -21,6 +21,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip' # Pip paketlerini önbelleğe alır, her turda tekrar internetten indirmez
 
       - name: Bağımlılıkları Yükle
         run: |

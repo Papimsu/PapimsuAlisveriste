@@ -23,116 +23,205 @@ def clean_url(url: str) -> str:
         return url.split("?")[0]
     return url
 
-def parse_price(price_text: str) -> Optional[float]:
-    """Para metinlerini float sayıya çevirir."""
-    if not price_text:
+def parse_price(price_text) -> Optional[float]:
+    """
+    Para metinlerini float sayıya çevirir. Türkçe ve İngilizce biçimleri ayırt eder:
+      '17.416,00 TL' -> 17416.0   (TR: nokta binlik, virgül ondalık)
+      '17.416'       -> 17416.0   (TR: tek nokta + 3 hane = binlik)
+      '17,416.00'    -> 17416.0   (EN: virgül binlik, nokta ondalık)
+      '17416.00'     -> 17416.0   (JSON: nokta ondalık)
+      '199,90 TL'    -> 199.9
+    Geçersiz veya 0 değerler için None döner.
+    """
+    if price_text is None:
+        return None
+    if isinstance(price_text, (int, float)):
+        return float(price_text) if price_text > 0 else None
+    s = re.sub(r"[^\d,\.]", "", str(price_text)).strip(".,")
+    if not s:
         return None
     try:
-        clean = re.sub(r"[^\d,\.]", "", str(price_text)).strip()
-        if "," in clean and "." in clean:
-            clean = clean.replace(".", "").replace(",", ".")
-        elif "," in clean:
-            clean = clean.replace(",", ".")
-        return float(clean)
+        if "," in s and "." in s:
+            if s.rfind(",") > s.rfind("."):
+                s = s.replace(".", "").replace(",", ".")   # 17.416,00
+            else:
+                s = s.replace(",", "")                      # 17,416.00
+        elif "," in s:
+            parts = s.split(",")
+            if len(parts) > 2 or len(parts[-1]) == 3:
+                s = s.replace(",", "")                      # 1,299 / 1,299,000 -> binlik
+            else:
+                s = s.replace(",", ".")                     # 199,90 -> ondalık
+        elif "." in s:
+            parts = s.split(".")
+            if len(parts) > 2 or len(parts[-1]) == 3:
+                s = s.replace(".", "")                      # 17.416 / 1.234.567 -> binlik
+        value = float(s)
+        return value if value > 0 else None
     except Exception:
         return None
+
+# Amazon'da SADECE ana ürünün fiyat kutuları (öneri/sponsorlu ürünlerin fiyatı yanlışlıkla okunmasın)
+AMAZON_PRICE_CONTAINERS = [
+    "corePriceDisplay_desktop_feature_div",
+    "corePrice_feature_div",
+    "apex_desktop",
+    "corePrice_desktop",
+    "desktop_buybox",
+    "buybox",
+]
+AMAZON_OOS_MARKERS = [
+    "mevcut değil", "stokta yok", "stokta bulunmamaktadır",
+    "currently unavailable", "temporarily out of stock",
+]
+
+def _amazon_price_from_span(span) -> Optional[float]:
+    off = span.find("span", class_="a-offscreen")
+    if off and off.get_text(strip=True):
+        return parse_price(off.get_text(strip=True))
+    whole = span.find("span", class_="a-price-whole")
+    if whole:
+        frac = span.find("span", class_="a-price-fraction")
+        w = re.sub(r"[^\d]", "", whole.get_text())
+        f = re.sub(r"[^\d]", "", frac.get_text()) if frac else "00"
+        if w:
+            return parse_price(f"{w}.{f or '00'}")
+    return None
 
 def fetch_amazon(soup: BeautifulSoup, raw_html: str) -> Dict[str, Any]:
     title_tag = soup.find(id="productTitle")
     title = title_tag.get_text(strip=True) if title_tag else None
 
+    containers = [c for c in (soup.find(id=cid) for cid in AMAZON_PRICE_CONTAINERS) if c]
     price_found = None
-    price_elem = soup.find("span", class_="priceToPay") or \
-                 soup.find("span", class_="apexPriceToPay") or \
-                 soup.find("span", id="priceblock_ourprice") or \
-                 soup.find("span", id="priceblock_dealprice")
 
-    if price_elem:
-        offscreen = price_elem.find("span", class_="a-offscreen")
-        price_text = offscreen.get_text(strip=True) if offscreen else price_elem.get_text(strip=True)
-        price_found = parse_price(price_text)
+    # 1. Ana kutulardaki "ödenecek fiyat" (priceToPay)
+    for c in containers:
+        el = c.find("span", class_="priceToPay") or c.find("span", class_="apexPriceToPay")
+        if el:
+            price_found = _amazon_price_from_span(el)
+            if price_found:
+                break
 
+    # 2. Ana kutulardaki diğer fiyatlar (üstü çizili liste fiyatı hariç)
     if price_found is None:
-        offscreen = soup.find("span", class_="a-offscreen")
-        if offscreen:
-            price_found = parse_price(offscreen.get_text(strip=True))
+        for c in containers:
+            for p in c.find_all("span", class_="a-price"):
+                if "a-text-price" in (p.get("class") or []):
+                    continue
+                price_found = _amazon_price_from_span(p)
+                if price_found:
+                    break
+            if price_found:
+                break
 
+    # 3. Eski Amazon şablonları
     if price_found is None:
-        whole = soup.find("span", class_="a-price-whole")
-        fraction = soup.find("span", class_="a-price-fraction")
-        if whole:
-            fraction_text = fraction.get_text(strip=True) if fraction else "00"
-            combined = f"{whole.get_text(strip=True)}.{fraction_text}"
-            price_found = parse_price(combined)
+        for pid in ("priceblock_ourprice", "priceblock_dealprice"):
+            el = soup.find("span", id=pid)
+            if el:
+                price_found = parse_price(el.get_text(strip=True))
+                if price_found:
+                    break
 
-    # 3. Aşama: Sayfa içi gömülü veri ve Regex yedekleri (DOM değişse bile asla ıskalamaz)
+    # 4. Sepete ekle formundaki gizli fiyat alanı (ana ürüne aittir)
     if price_found is None:
-        amount_match = re.search(r'"priceAmount":\s*([0-9\.]+)', raw_html)
-        if amount_match:
-            try:
-                price_found = float(amount_match.group(1))
-            except Exception:
-                pass
+        m = re.search(r'customerVisiblePrice\]\[amount\]"\s+value="([0-9.]+)"', raw_html)
+        if m:
+            price_found = parse_price(m.group(1))
 
+    # 5. Gömülü veri - sadece sayfada TEK bir fiyat varsa (başka ürünle karışmasın)
     if price_found is None:
-        display_match = re.search(r'"displayPrice":\s*"([^"]+)"', raw_html)
-        if display_match:
-            price_found = parse_price(display_match.group(1))
+        amounts = set(re.findall(r'"priceAmount":\s*([0-9\.]+)', raw_html))
+        if len(amounts) == 1:
+            price_found = parse_price(amounts.pop())
 
-    # Satıcı Tespiti
-    seller_name = "Üçüncü Taraf Satıcı"
-    is_official = False
+    # Stok durumu
+    avail = soup.find(id="availability")
+    avail_text = avail.get_text(" ", strip=True).lower() if avail else ""
+    out_of_stock = bool(soup.find(id="outOfStock")) or any(m in avail_text for m in AMAZON_OOS_MARKERS)
+    if out_of_stock:
+        price_found = None  # Stokta yokken görünen fiyat ana ürünün satış fiyatı değildir
 
-    buybox = soup.find(id="desktop_buybox") or soup.find(id="buybox")
-    if buybox:
-        bb_text = buybox.get_text(" ", strip=True)
-        if "Amazon.com.tr" in bb_text:
-            seller_name = "Amazon.com.tr"
-            is_official = True
-        else:
-            seller_link = buybox.find(id="sellerProfileTriggerId") or buybox.find("a", href=re.compile(r"/seller/"))
-            if seller_link:
-                seller_name = seller_link.get_text(strip=True)
+    # Satıcı tespiti: SADECE "Satıcı" alanına bakılır ("Gönderici: Amazon" resmi satıcı demek değildir)
+    seller_name = None
+    for el in soup.find_all(attrs={"offer-display-feature-name": "desktop-merchant-info"}):
+        if "offer-display-feature-text" in (el.get("class") or []):
+            msg = el.find(class_="offer-display-feature-text-message")
+            txt = msg.get_text(" ", strip=True) if msg else ""
+            if not txt:
+                first = el.find(["a", "span"], string=True)
+                txt = first.get_text(" ", strip=True) if first else ""
+            if txt:
+                seller_name = txt
+                break
+    if not seller_name:
+        link = soup.find(id="sellerProfileTriggerId")
+        if link and link.get_text(strip=True):
+            seller_name = link.get_text(strip=True)
 
-    if not is_official:
-        m_info = soup.find(id="merchant-info")
-        if m_info and "amazon" in m_info.get_text(strip=True).lower():
-            seller_name = "Amazon.com.tr"
-            is_official = True
+    if seller_name:
+        is_official = seller_name.strip().lower().startswith("amazon.com.tr")
+    else:
+        seller_name = "Satıcı tespit edilemedi"
+        is_official = False
 
-    return {"title": title, "price": price_found, "seller_name": seller_name, "is_official_seller": is_official, "platform": "Amazon"}
+    return {
+        "title": title, "price": price_found, "seller_name": seller_name,
+        "is_official_seller": is_official, "platform": "Amazon", "out_of_stock": out_of_stock,
+    }
 
 def fetch_trendyol(soup: BeautifulSoup, raw_html: str) -> Dict[str, Any]:
     title = None
     price_found = None
     seller_name = "Trendyol Satıcısı"
     is_official = False
+    out_of_stock = False
 
-    # JSON-LD
-    scripts = soup.find_all("script", type="application/ld+json")
-    for s in scripts:
+    # JSON-LD (ana ürünün yapılandırılmış verisi)
+    for s in soup.find_all("script", type="application/ld+json"):
         try:
             data = json.loads(s.string)
-            if "offers" in data:
-                price_found = parse_price(str(data["offers"].get("price")))
-                title = data.get("name")
-                break
         except Exception:
-            pass
+            continue
+        for d in (data if isinstance(data, list) else [data]):
+            if not isinstance(d, dict) or "offers" not in d:
+                continue
+            offers = d["offers"]
+            if isinstance(offers, list):
+                offers = offers[0] if offers else {}
+            price_found = parse_price(offers.get("price"))
+            title = d.get("name")
+            availability = str(offers.get("availability", ""))
+            if "OutOfStock" in availability or "SoldOut" in availability:
+                out_of_stock = True
+            seller = offers.get("seller")
+            if isinstance(seller, dict) and seller.get("name"):
+                seller_name = seller["name"]
+            break
+        if title:
+            break
 
     if not title:
         title_elem = soup.find("h1", class_="pr-new-br") or soup.find("h1")
         title = title_elem.get_text(" ", strip=True) if title_elem else None
 
-    # Satıcı
-    match = re.search(r'"merchant":\{"id":\d+,"name":"([^"]+)"', raw_html)
-    if match:
-        seller_name = match.group(1)
-        if "trendyol" in seller_name.lower():
-            is_official = True
-            seller_name = "Trendyol"
+    # Satıcı (JSON-LD'de yoksa sayfa içi veriden)
+    if seller_name == "Trendyol Satıcısı":
+        match = re.search(r'"merchant":\{"id":\d+,"name":"([^"]+)"', raw_html)
+        if match:
+            seller_name = match.group(1)
+    if "trendyol" in seller_name.lower() and seller_name != "Trendyol Satıcısı":
+        is_official = True
+        seller_name = "Trendyol"
 
-    return {"title": title, "price": price_found, "seller_name": seller_name, "is_official_seller": is_official, "platform": "Trendyol"}
+    if out_of_stock:
+        price_found = None
+
+    return {
+        "title": title, "price": price_found, "seller_name": seller_name,
+        "is_official_seller": is_official, "platform": "Trendyol", "out_of_stock": out_of_stock,
+    }
 
 def fetch_hepsiburada(soup: BeautifulSoup, raw_html: str) -> Dict[str, Any]:
     title = None
@@ -179,7 +268,7 @@ def fetch_hepsiburada(soup: BeautifulSoup, raw_html: str) -> Dict[str, Any]:
                 is_official = True
                 seller_name = "Hepsiburada"
 
-    return {"title": title, "price": price_found, "seller_name": seller_name, "is_official_seller": is_official, "platform": "Hepsiburada"}
+    return {"title": title, "price": price_found, "seller_name": seller_name, "is_official_seller": is_official, "platform": "Hepsiburada", "out_of_stock": False}
 
 def fetch_product_data(url: str) -> Dict[str, Any]:
     cleaned = clean_url(url)
@@ -190,6 +279,7 @@ def fetch_product_data(url: str) -> Dict[str, Any]:
         "seller_name": "Satıcı Bilgisi Yok",
         "is_official_seller": False,
         "platform": "Bilinmeyen",
+        "out_of_stock": False,
         "success": False,
         "error": None
     }
@@ -208,6 +298,7 @@ def fetch_product_data(url: str) -> Dict[str, Any]:
 
             if resp.status_code != 200:
                 result["error"] = f"HTTP {resp.status_code}"
+                time.sleep(2.0)
                 continue
 
             soup = BeautifulSoup(resp.text, "html.parser")
@@ -223,13 +314,20 @@ def fetch_product_data(url: str) -> Dict[str, Any]:
                 result["error"] = "Desteklenmeyen platform"
                 return result
 
+            result["title"] = parsed.get("title") or "Ürün"
+            result["seller_name"] = parsed.get("seller_name", "Satıcı")
+            result["is_official_seller"] = parsed.get("is_official_seller", False)
+            result["platform"] = parsed.get("platform", "Pazar Yeri")
+
+            # Stokta yok: site çalışıyor, sorun bizde değil -> tekrar denemeye gerek yok
+            if parsed.get("out_of_stock"):
+                result["out_of_stock"] = True
+                result["error"] = "Stokta yok"
+                return result
+
             # Fiyat başarıyla bulunduysa sonucu döndür
             if parsed.get("price") is not None:
-                result["title"] = parsed.get("title") or "Ürün"
                 result["price"] = parsed.get("price")
-                result["seller_name"] = parsed.get("seller_name", "Satıcı")
-                result["is_official_seller"] = parsed.get("is_official_seller", False)
-                result["platform"] = parsed.get("platform", "Pazar Yeri")
                 result["success"] = True
                 result["error"] = None
                 return result

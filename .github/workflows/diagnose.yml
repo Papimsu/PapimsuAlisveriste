@@ -1,0 +1,41 @@
+name: Teşhis - GitHub IP'sinden 3 Site Testi
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'diagnose.py'
+      - 'scraper.py'
+      - '.github/workflows/diagnose.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: price-checker
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - run: python diagnose.py
+      - name: Sonucu Kaydet
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add diagnostics/github_ip_test.json
+          git commit -m "Diag: GitHub IP site test" || exit 0
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin main && exit 0
+            git rebase --abort || true
+            sleep 3
+          done

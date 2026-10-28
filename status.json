@@ -5,8 +5,8 @@
   "ok": 0,
   "failed": 0,
   "out_of_stock": 0,
-  "last_run_utc": "2026-10-28T19:34:53+00:00",
-  "last_run_tr": "28.10.2026 22:34",
+  "last_run_utc": "2026-10-28T20:19:40+00:00",
+  "last_run_tr": "28.10.2026 23:19",
   "circuit_breaker_tripped": {
     "www.amazon.com.tr": true
   },
